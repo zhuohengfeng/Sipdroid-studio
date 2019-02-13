@@ -58,15 +58,17 @@ import org.zoolu.tools.Parser;
  * It can use external audio/video tools as media applications. Currently only
  * RAT (Robust Audio Tool) and VIC are supported as external applications.
  */
+
+//在SipdroidEngine.startEngine()时初始化, 等待注册代理注册成功, 这个类对象就会派上用场, 管理SIP账户的呼入呼出.
 public class UserAgent extends CallListenerAdapter {
 	/** Event logger. */
 	Log log;
 
 	/** UserAgentProfile */
-	public UserAgentProfile user_profile;
+	public UserAgentProfile user_profile; //用户代理"任务简介"
 
 	/** SipProvider */
-	protected SipProvider sip_provider;
+	protected SipProvider sip_provider; //SIP传输层相关类
 
 	/** Call */
 	// Call call;
@@ -81,6 +83,7 @@ public class UserAgent extends CallListenerAdapter {
 	/** Local sdp */
 	protected String local_session = null;
 
+	//UA的状态值: 正在呼叫/有来电/空闲...
 	/**
 	 * four states for user agent :
 	 * 0: idle (空闲状态)
@@ -142,7 +145,7 @@ public class UserAgent extends CallListenerAdapter {
 		user_profile.no_offer = nooffer;
 	}
 
-	/** Enables audio */
+	/** Enables audio *///音频使能
 	public void setAudio(boolean enable) {
 		user_profile.audio = enable;
 	}
@@ -262,7 +265,7 @@ public class UserAgent extends CallListenerAdapter {
 	}
 
 	// *************************** Public Methods **************************
-
+	//用户代理构造函数, 初始化需要参数:传输层+用户代理"个人简介"
 	/** Costructs a UA with a default media port */
 	public UserAgent(SipProvider sip_provider, UserAgentProfile user_profile) {
 		this.sip_provider = sip_provider;
@@ -271,12 +274,13 @@ public class UserAgent extends CallListenerAdapter {
 		realm = user_profile.realm;
 		
 		// if no contact_url and/or from_url has been set, create it now
-		user_profile.initContactAddress(sip_provider);
+		user_profile.initContactAddress(sip_provider); //如果没有设置contact_ual或from_url, 就创建
 	}
 
 	String realm;
 	
 	/** Makes a new call (acting as UAC). */
+	//呼叫功能具体实现, 需要参数: 被叫url
 	public boolean call(String target_url, boolean send_anonymous) {
 		
 		if (Receiver.call_state != UA_STATE_IDLE)

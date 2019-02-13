@@ -45,6 +45,17 @@ import android.os.PowerManager;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 
+
+// 这个SipdroidEngine类是围绕Agent和Provider对象们展开的方法, 比如:
+//
+//		halt(): 取消所有Agent注册, 释放wifi和点亮锁
+//		expire(): 置位所有Agent状态为UNREGISTERED, 重新register()
+//		StartEngine(): 启动SIP引擎
+//		CheckEngine(): 检查sip_providers(和状态代理服务器OutboundProxy有关, 暂略)
+//		Agent注册的回调方法: onUaRegistrationSuccess()/onUaRegistrationFailure()
+//		网络电话接口: listen()/call()/hangup()/togglehold()/transfer()
+
+//SipdroidEngine-->RegisterAgent-->TransactionClient-->Transaction-->SipProvider, 终于理清了SIP用户注册的路线
 public class SipdroidEngine implements RegisterAgentListener {
 
 	public static final int LINES = 2;
@@ -97,7 +108,9 @@ public class SipdroidEngine implements RegisterAgentListener {
 		return user_profile;
 	}
 
+
 	public boolean StartEngine() {
+			//获取了wifi和电池权限, 是关于屏幕常亮和保持wifi在屏幕关闭后不会断线的设置
 			PowerManager pm = (PowerManager) getUIContext().getSystemService(Context.POWER_SERVICE);
 			WifiManager wm = (WifiManager) getUIContext().getSystemService(Context.WIFI_SERVICE);
 			if (wl == null) {
@@ -107,22 +120,32 @@ public class SipdroidEngine implements RegisterAgentListener {
 					edit.putBoolean(Settings.PREF_KEEPON, true);
 					edit.commit();
 				}
+				//
 				wl = new PowerManager.WakeLock[LINES];
 				pwl = new PowerManager.WakeLock[LINES];
 				wwl = new WifiManager.WifiLock[LINES];
 			}
 			pref = ChangeAccount.getPref(Receiver.mContext);
 
+			//初始化各种代理对象: 使用者代理, 注册代理, SIP保活代理
+			// 每一个SIP客户端都是一个UserAgentClient类对象, 简单的SIP使用者代理, 简称UA. 包括了音视频应用. 可以使用外部音视频接口作为媒体应用
 			uas = new UserAgent[LINES];
-			ras = new RegisterAgent[LINES]; //
-			kas = new KeepAliveSip[LINES];
+			// 每一次向服务器的注册都是由RegisterAgent类对象发起的RegisterTransaction
+			// 每一个新的电话就是一个新的Session/Dialog类对象, 每个Session/Dialog中的行为如接听, 挂断, 拒接...也都是一个Transaction类对象
+			ras = new RegisterAgent[LINES]; // 注册代理,注册使用者代理. 向服务器中注册(一次或者周期性)联系人地址.
+			// 心跳
+			kas = new KeepAliveSip[LINES]; // SIP保活代理
+
+			// 初始化各种代理的"个人资料"
 			lastmsgs = new String[LINES];
+			// 对每一个Session的描述就是一个SipProvider类对象. SipProvider类封装了SIP传输层协议, 传输层负责发送和接收SIP消息, 接收信息由SipProviderListener的回调接口实现
 			sip_providers = new SipProvider[LINES];
 			user_profiles = new UserAgentProfile[LINES];
 			user_profiles[0] = getUserAgentProfile("");
 			for (int i = 1; i < LINES; i++)
 				user_profiles[1] = getUserAgentProfile(""+i);
-			
+
+			//SipStack和UserAgent, RegisterAgent之间的关联?
 			SipStack.init(null);
 			int i = 0;
 			
@@ -169,6 +192,7 @@ public class SipdroidEngine implements RegisterAgentListener {
 					}
 		
 					uas[i] = ua = new UserAgent(sip_providers[i], user_profile);
+					// // 构造含有认证信息的RegisterAgent
 					ras[i] = new RegisterAgent(sip_providers[i], user_profile.from_url, // modified
 							user_profile.contact_url, user_profile.username,
 							user_profile.realm, user_profile.passwd, this, user_profile,
@@ -178,8 +202,8 @@ public class SipdroidEngine implements RegisterAgentListener {
 				}
 				i++;
 			}
-			register();
-			listen();
+			register(); //注册代理进行注册
+			listen();  //注册完成SIP通路建立完成, 就可以监听来电了
 
 			return true;
 	}

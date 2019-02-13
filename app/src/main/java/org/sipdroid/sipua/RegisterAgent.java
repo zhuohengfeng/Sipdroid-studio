@@ -63,6 +63,7 @@ public class RegisterAgent implements TransactionClientListener, SubscriberDialo
 	static final int MAX_ATTEMPTS = 3;
 	
 	/* States for the RegisterAgent Module */
+	// //定义注册状态变量: 未注册/正在注册/已注册/正在重新注册...
 	public static final int UNDEFINED = 0;
 	public static final int UNREGISTERED = 1;
 	public static final int REGISTERING = 2;
@@ -70,19 +71,19 @@ public class RegisterAgent implements TransactionClientListener, SubscriberDialo
 	public static final int DEREGISTERING = 4;
 	
 	/** RegisterAgent listener */
-	RegisterAgentListener listener;
+	RegisterAgentListener listener; //注册监听回调
 
 	/** SipProvider */
-	SipProvider sip_provider;
+	SipProvider sip_provider; //SIP传输层
 
 	/** User's URI with the fully qualified domain name of the registrar server. */
-	NameAddress target;
+	NameAddress target; //目标url
 
 	/** User name. */
 	String username;
 
 	/** User realm. */
-	String realm;
+	String realm; //Authorization中的realm参数, 表示范围
 
 	/** User's passwd. */
 	String passwd;
@@ -96,13 +97,15 @@ public class RegisterAgent implements TransactionClientListener, SubscriberDialo
 	Boolean pub;
 	
 	/** Nonce for the next authentication. */
-	String next_nonce;
+	//服务器端指定的数据字符，它应在每个401回应产生时，被唯一地创建。建议该字符以base64方式或16进制方式出现。另外，该字符在标题行中传递时是在引号内的，因此允许使用双引号字符。
+	String next_nonce; //Authorization中的nonce参数, 相当于认证密码
 
 	/** Qop for the next authentication. */
+	// “auth”表示鉴别方式；“auth-int”表示鉴别保护的完整性。
 	String qop;
 
 	/** User's contact address. */
-	NameAddress contact;
+	NameAddress contact; //自己的url
 
 	/** Expiration time. */
 	int expire_time;
@@ -119,7 +122,7 @@ public class RegisterAgent implements TransactionClientListener, SubscriberDialo
 	/** Current State of the registrar component */
 	public int CurrentState;
 
-	UserAgentProfile user_profile;
+	UserAgentProfile user_profile; //用户代理"个人简介"
 
 	SubscriberDialog sd;
 	boolean alreadySubscribed = false;
@@ -130,6 +133,7 @@ public class RegisterAgent implements TransactionClientListener, SubscriberDialo
 	 * Creates a new RegisterAgent with authentication credentials (i.e.
 	 * username, realm, and passwd).
 	 */
+	//// 构造含有认证信息的RegisterAgent
 	public RegisterAgent(SipProvider sip_provider, String target_url,
 			String contact_url, String username, String realm, String passwd,
 			RegisterAgentListener listener,UserAgentProfile user_profile,
@@ -156,6 +160,7 @@ public class RegisterAgent implements TransactionClientListener, SubscriberDialo
 	}
 	
 	/** Inits the RegisterAgent. */
+	// //RegisterAgent普通构造函数, 不含认证信息
 	private void init(SipProvider sip_provider, String target_url,
 			String contact_url, RegisterAgentListener listener) {
 		
@@ -188,7 +193,9 @@ public class RegisterAgent implements TransactionClientListener, SubscriberDialo
 	TransactionClient t;
 	
 	/** Registers with the registrar server for <i>expire_time</i> seconds. */
+	//注册代理类的核心在注册方法register():
 	public boolean register(int expire_time) {
+		// 关于注册超时的时间计算
 		attempts = 0;
 		if (expire_time > 0)
 		{
@@ -222,7 +229,8 @@ public class RegisterAgent implements TransactionClientListener, SubscriberDialo
 			expire_time = 0;
 			CurrentState = DEREGISTERING;
 		}
-		
+
+		////创建一个注册请求msg: req
 		//Create message re (modified by mandrajg)
 		Message req = MessageFactory.createRegisterRequest(sip_provider,
 				target, target, new NameAddress(user_profile.contact_url), qvalue, icsi);
@@ -255,7 +263,10 @@ public class RegisterAgent implements TransactionClientListener, SubscriberDialo
 		{
 			printLog("Unregistering contact " + contact, LogLevel.HIGH);
 		}
-		
+
+		//Sipdroid已经将SIP的各种功能分派到各个代理人(==代理类)去执行, 又将每个代理人的执行任务划归到Transaction
+		//每一个用户将会有一个用户注册代理人, 管理向SIP服务器注册的一切Transactions, 包括代理自身的信息,
+		// 注册msg的创建, 注册transaction前的各种准备都完成后, 执行任务将调用TransactionClient().
 		t = new TransactionClient(sip_provider, req, this, 30000);
 		t.request();
 		

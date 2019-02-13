@@ -38,6 +38,9 @@ import org.zoolu.tools.LogLevel;
  * TransactionListener passed to the TransactionClient object.<BR>
  */
 
+//TransactionClient用于响应一个新的SIP事务的创建, 每个SIP事务的创建都需要SipProvider组建的请求消息, 结束则需要一个最终回复.
+//
+//网络状态的变化和信息接收都将通过事务监听器TransactionListener传递给客户端事务对象TransactionClient object.
 public class TransactionClient extends Transaction {
 	/**
 	 * the TransactionClientListener that captures the events fired by the

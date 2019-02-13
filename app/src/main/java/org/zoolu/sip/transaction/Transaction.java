@@ -37,6 +37,15 @@ import org.zoolu.tools.LogLevel;
  * The changes of the internal status and the received messages are fired to the
  * TransactionListener passed to the Transaction Objects.<BR>
  */
+
+/**
+ * 因为TransactionClient类继承自Transaction类, 所以先学习下父类, 再学习子类.
+ *
+ * Trasaction类中用到了两种Java设计模式: 抽象类和继承接口类. 从下面的抽象类中可以归纳出Transaction的基本功能:
+ *
+ * 构造一个Transaction对象: 初始化SIP协议传输层管理对象sip_provider, 需要传输的SIP请求req, 初始化Transaction ID, 状态, 网络情况
+ * 监听SIP msg, 超时回调
+ */
 public abstract class Transaction implements SipProviderListener, TimerListener {
 	/** Transactions counter */
 	protected static int transaction_counter = 0;
@@ -90,12 +99,14 @@ public abstract class Transaction implements SipProviderListener, TimerListener 
 	 * received by the SipProvider are fired to the Transaction by means of the
 	 * onReceivedMessage() method.
 	 */
+	//SipProvider的onReceivedMessage()方法提供的SIP msg
 	SipProvider sip_provider;
 
 	/** Internal state-machine status */
 	int status;
 
 	/** transaction request message/method */
+	//请求msg: req
 	Message request;
 
 	/** the Transaction ID */
@@ -105,6 +116,7 @@ public abstract class Transaction implements SipProviderListener, TimerListener 
 	ConnectionIdentifier connection_id;
 
 	/** Costructs a new Transaction */
+	//构造一个Transaction
 	protected Transaction(SipProvider sip_provider) {
 		this.sip_provider = sip_provider;
 		log = sip_provider.getLog();
@@ -162,6 +174,7 @@ public abstract class Transaction implements SipProviderListener, TimerListener 
 	 * SipProvider when a new message is catch for to the present
 	 * ServerTransaction.
 	 */
+	//SipProvider接口实现: msg监听(SIP Provider暨SIP传输层监听到msg后, 回调给TransactinListener, 交给事务对象处理)
 	public void onReceivedMessage(SipProvider provider, Message msg) { // do
 		// nothing
 	}
@@ -170,6 +183,7 @@ public abstract class Transaction implements SipProviderListener, TimerListener 
 	 * Method derived from interface TimerListener. It's fired from an active
 	 * Timer.
 	 */
+	//TimerListener接口实现: 超时回调
 	public void onTimeout(Timer to) { // do nothing
 	}
 
